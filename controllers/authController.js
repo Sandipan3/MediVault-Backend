@@ -38,7 +38,6 @@ export const register = async (req, res) => {
       nonce,
     });
 
-    // ✅ include _id in response
     return res.status(201).json({
       status: "success",
       message: "User registered successfully",
