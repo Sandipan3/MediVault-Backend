@@ -38,11 +38,13 @@ export const register = async (req, res) => {
       nonce,
     });
 
+    // ✅ include _id in response
     return res.status(201).json({
       status: "success",
       message: "User registered successfully",
       data: {
         user: {
+          _id: user._id,
           name: user.name,
           walletAddress: user.walletAddress,
           role: user.role,
@@ -133,6 +135,7 @@ export const login = async (req, res) => {
       data: {
         token,
         user: {
+          _id: user._id,
           name: user.name,
           walletAddress: user.walletAddress,
           role: user.role,
