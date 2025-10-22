@@ -125,7 +125,7 @@ export const login = async (req, res) => {
         walletAddress: user.walletAddress,
       },
       process.env.JWT_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: "1d" }
     );
 
     return res.status(200).json({
