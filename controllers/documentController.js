@@ -83,3 +83,28 @@ export const getDocumentCount = async (req, res) => {
     res.status(500).json({ message: "Error getting document count" });
   }
 };
+
+export const getDocumentsByUserID = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const docs = await PatientDocument.find({ patientId: userId }).sort({
+      createdAt: -1,
+    });
+
+    if (!docs || docs.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No documents found for this user" });
+    }
+
+    res.status(200).json({
+      status: "success",
+      count: docs.length,
+      data: docs,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching user documents" });
+  }
+};

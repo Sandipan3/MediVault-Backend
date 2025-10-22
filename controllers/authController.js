@@ -148,3 +148,36 @@ export const login = async (req, res) => {
     });
   }
 };
+
+export const getUserByWallet = async (req, res) => {
+  try {
+    const walletAddress = req.params.walletAddress?.toLowerCase();
+
+    if (!walletAddress) {
+      return res.status(400).json({
+        status: "error",
+
+        message: "Wallet address is required",
+      });
+    }
+    const user = await User.findOne({ walletAddress: walletAddress });
+
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      data: user,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+
+      message: error.message,
+    });
+  }
+};

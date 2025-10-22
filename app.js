@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import connectDB from "./utils/connectDB.js";
 import authRouter from "./routes/authRoutes.js";
 import documentRouter from "./routes/documentRoutes.js";
+import accessControlRouter from "./routes/accessControlRoutes.js";
 dotenv.config();
 
 const app = express();
@@ -20,6 +21,8 @@ app.use(
 
 app.use("/api/auth", authRouter);
 app.use("/api/document", documentRouter);
+app.use("/api/access", accessControlRouter);
+
 connectDB();
 
 const PORT = process.env.PORT || 5000;

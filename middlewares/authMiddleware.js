@@ -1,3 +1,8 @@
+import User from "../models/User.js";
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+dotenv.config();
+
 const authMiddleware = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization || req.headers.Authorization;
@@ -27,3 +32,5 @@ const authMiddleware = async (req, res, next) => {
     return res.status(401).json({ message: "Invalid or expired token" });
   }
 };
+
+export default authMiddleware;
