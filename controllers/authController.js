@@ -176,7 +176,6 @@ export const getUserByWallet = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       status: "error",
-
       message: error.message,
     });
   }
