@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import dotenv from "dotenv";
-import { SiweMessage } from "siwe";
+import { SiweMessage } from "siwe"; //npm install siwe@2.1.4
 import User from "../models/User.js";
 
 dotenv.config();
