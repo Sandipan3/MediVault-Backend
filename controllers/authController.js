@@ -1,11 +1,12 @@
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import dotenv from "dotenv";
-import { ethers } from "ethers";
+import { SiweMessage } from "siwe";
 import User from "../models/User.js";
 
 dotenv.config();
 
+/* REGISTER */
 export const register = async (req, res) => {
   try {
     const { name, walletAddress, role } = req.body;
@@ -18,6 +19,7 @@ export const register = async (req, res) => {
     }
 
     const normalizedAddress = walletAddress.toLowerCase();
+
     const existingUser = await User.findOne({
       walletAddress: normalizedAddress,
     });
@@ -58,24 +60,33 @@ export const register = async (req, res) => {
   }
 };
 
+/* GET NONCE (SIWE READY) */
 export const getNonce = async (req, res) => {
   try {
     let { walletAddress } = req.body;
+
     if (!walletAddress) {
-      return res.status(400).json({ message: "Wallet address is required" });
+      return res.status(400).json({
+        message: "Wallet address is required",
+      });
     }
 
     walletAddress = walletAddress.toLowerCase();
 
-    let user = await User.findOne({ walletAddress });
+    const user = await User.findOne({ walletAddress });
+
     if (!user) {
-      user = await User.create({
-        walletAddress,
-        nonce: crypto.randomBytes(32).toString("hex"),
+      return res.status(404).json({
+        message: "User not registered",
       });
     }
 
-    return res.status(200).json({ nonce: user.nonce });
+    return res.status(200).json({
+      nonce: user.nonce,
+      domain: process.env.SIWE_DOMAIN,
+      uri: process.env.SIWE_URI,
+      chainId: Number(process.env.SIWE_CHAIN_ID),
+    });
   } catch (error) {
     return res.status(500).json({
       message: "Server error",
@@ -84,19 +95,27 @@ export const getNonce = async (req, res) => {
   }
 };
 
+// SIWE LOGIN
 export const login = async (req, res) => {
   try {
-    const { walletAddress, signature } = req.body;
+    const { message, signature } = req.body;
 
-    if (!walletAddress || !signature) {
+    if (!message || !signature) {
       return res.status(400).json({
         status: "error",
-        message: "Missing walletAddress or signature",
+        message: "Missing message or signature",
       });
     }
 
-    const normalizedAddress = walletAddress.toLowerCase();
-    const user = await User.findOne({ walletAddress: normalizedAddress });
+    // Parse SIWE message
+    const siweMessage = new SiweMessage(message);
+
+    // Verify signature
+    const fields = await siweMessage.verify({ signature });
+
+    const walletAddress = fields.data.address.toLowerCase();
+
+    const user = await User.findOne({ walletAddress });
 
     if (!user) {
       return res.status(404).json({
@@ -105,27 +124,56 @@ export const login = async (req, res) => {
       });
     }
 
-    const message = `Sign this nonce: ${user.nonce}`;
-    const recovered = ethers.verifyMessage(message, signature);
-
-    if (recovered.toLowerCase() !== normalizedAddress) {
+    // nonce check
+    if (fields.data.nonce !== user.nonce) {
       return res.status(401).json({
         status: "error",
-        message: "Signature verification failed",
+        message: "Invalid nonce",
       });
     }
 
-    // Refresh nonce for next login
+    // domain check
+    if (fields.data.domain !== process.env.SIWE_DOMAIN) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid domain",
+      });
+    }
+
+    // uri check
+    if (fields.data.uri !== process.env.SIWE_URI) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid URI",
+      });
+    }
+
+    // chain check
+    if (
+      process.env.SIWE_CHAIN_ID &&
+      fields.data.chainId !== Number(process.env.SIWE_CHAIN_ID)
+    ) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid chain",
+      });
+    }
+
+    /* REFRESH NONCE  */
+
     user.nonce = crypto.randomBytes(32).toString("hex");
     await user.save();
+
+    /*  ISSUE JWT  */
 
     const token = jwt.sign(
       {
         id: user._id,
         walletAddress: user.walletAddress,
+        role: user.role,
       },
       process.env.JWT_SECRET,
-      { expiresIn: "1d" }
+      { expiresIn: "1d" },
     );
 
     return res.status(200).json({
@@ -142,6 +190,7 @@ export const login = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("SIWE login error:", error);
     return res.status(500).json({
       status: "error",
       message: error.message,
@@ -149,6 +198,7 @@ export const login = async (req, res) => {
   }
 };
 
+// GET USER BY WALLET
 export const getUserByWallet = async (req, res) => {
   try {
     const walletAddress = req.params.walletAddress?.toLowerCase();
@@ -156,11 +206,11 @@ export const getUserByWallet = async (req, res) => {
     if (!walletAddress) {
       return res.status(400).json({
         status: "error",
-
         message: "Wallet address is required",
       });
     }
-    const user = await User.findOne({ walletAddress: walletAddress });
+
+    const user = await User.findOne({ walletAddress });
 
     if (!user) {
       return res.status(404).json({
