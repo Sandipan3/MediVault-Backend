@@ -6,6 +6,7 @@ import connectDB from "./utils/connectDB.js";
 import authRouter from "./routes/authRoutes.js";
 import documentRouter from "./routes/documentRoutes.js";
 import accessControlRouter from "./routes/accessControlRoutes.js";
+import zkpRouter from "./routes/zkpRoutes.js";
 dotenv.config();
 
 const app = express();
@@ -16,12 +17,13 @@ app.use(
   cors({
     origin: "http://localhost:5173",
     credentials: true,
-  })
+  }),
 );
 
 app.use("/api/auth", authRouter);
 app.use("/api/document", documentRouter);
 app.use("/api/access", accessControlRouter);
+app.use("/api/zkp", zkpRouter);
 
 connectDB();
 
