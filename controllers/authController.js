@@ -18,10 +18,8 @@ export const register = async (req, res) => {
       });
     }
 
-    const normalizedAddress = walletAddress.toLowerCase();
-
     const existingUser = await User.findOne({
-      walletAddress: normalizedAddress,
+      walletAddress,
     });
 
     if (existingUser) {
@@ -35,7 +33,7 @@ export const register = async (req, res) => {
 
     const user = await User.create({
       name,
-      walletAddress: normalizedAddress,
+      walletAddress,
       role: role ? role.toLowerCase() : "patient",
       nonce,
     });
@@ -60,7 +58,7 @@ export const register = async (req, res) => {
   }
 };
 
-/* GET NONCE (SIWE READY) */
+/* GET NONCE */
 export const getNonce = async (req, res) => {
   try {
     let { walletAddress } = req.body;
@@ -70,8 +68,6 @@ export const getNonce = async (req, res) => {
         message: "Wallet address is required",
       });
     }
-
-    walletAddress = walletAddress.toLowerCase();
 
     const user = await User.findOne({ walletAddress });
 
@@ -95,7 +91,7 @@ export const getNonce = async (req, res) => {
   }
 };
 
-// SIWE LOGIN
+/* LOGIN */
 export const login = async (req, res) => {
   try {
     const { message, signature } = req.body;
@@ -107,13 +103,11 @@ export const login = async (req, res) => {
       });
     }
 
-    // Parse SIWE message
     const siweMessage = new SiweMessage(message);
-
-    // Verify signature
     const fields = await siweMessage.verify({ signature });
 
-    const walletAddress = fields.data.address.toLowerCase();
+    const walletAddress = fields.data.address;
+    console.log(walletAddress);
 
     const user = await User.findOne({ walletAddress });
 
@@ -124,7 +118,6 @@ export const login = async (req, res) => {
       });
     }
 
-    // nonce check
     if (fields.data.nonce !== user.nonce) {
       return res.status(401).json({
         status: "error",
@@ -132,7 +125,6 @@ export const login = async (req, res) => {
       });
     }
 
-    // domain check
     if (fields.data.domain !== process.env.SIWE_DOMAIN) {
       return res.status(401).json({
         status: "error",
@@ -140,7 +132,6 @@ export const login = async (req, res) => {
       });
     }
 
-    // uri check
     if (fields.data.uri !== process.env.SIWE_URI) {
       return res.status(401).json({
         status: "error",
@@ -148,7 +139,6 @@ export const login = async (req, res) => {
       });
     }
 
-    // chain check
     if (
       process.env.SIWE_CHAIN_ID &&
       fields.data.chainId !== Number(process.env.SIWE_CHAIN_ID)
@@ -159,12 +149,8 @@ export const login = async (req, res) => {
       });
     }
 
-    /* REFRESH NONCE  */
-
     user.nonce = crypto.randomBytes(32).toString("hex");
     await user.save();
-
-    /*  ISSUE JWT  */
 
     const token = jwt.sign(
       {
@@ -198,10 +184,10 @@ export const login = async (req, res) => {
   }
 };
 
-// GET USER BY WALLET
+/* GET USER */
 export const getUserByWallet = async (req, res) => {
   try {
-    const walletAddress = req.params.walletAddress?.toLowerCase();
+    const walletAddress = req.params.walletAddress;
 
     if (!walletAddress) {
       return res.status(400).json({

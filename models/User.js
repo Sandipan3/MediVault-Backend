@@ -10,7 +10,6 @@ const userSchema = new mongoose.Schema(
     walletAddress: {
       type: String,
       required: true,
-      lowercase: true,
       unique: true,
     },
     role: {
@@ -24,7 +23,7 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const User = mongoose.model("User", userSchema);
