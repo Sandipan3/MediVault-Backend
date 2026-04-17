@@ -40,6 +40,7 @@ export const checkAccess = async (req, res) => {
     const hasAccess = await contract.checkAccess(patient, doctor);
     res.status(200).json({ status: "success", hasAccess });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ status: "error", error: error.message });
   }
 };

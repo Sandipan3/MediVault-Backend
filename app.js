@@ -7,6 +7,7 @@ import authRouter from "./routes/authRoutes.js";
 import documentRouter from "./routes/documentRoutes.js";
 import accessControlRouter from "./routes/accessControlRoutes.js";
 import zkpRouter from "./routes/zkpRoutes.js";
+import adminRouter from "./routes/adminRoutes.js";
 dotenv.config();
 
 const app = express();
@@ -24,6 +25,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/document", documentRouter);
 app.use("/api/access", accessControlRouter);
 app.use("/api/zkp", zkpRouter);
+app.use("/api/admin", adminRouter);
 
 connectDB();
 
